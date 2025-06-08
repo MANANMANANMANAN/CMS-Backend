@@ -1,0 +1,29 @@
+Logs
+node_modules
+npm-debug.log
+yarn-error.log
+# Environment variables
+.env
+# Build output
+dist
+# IDE specific files
+.vscode
+# OS generated files
+.DS_Store
+# Coverage reports
+coverage
+# Temporary files
+tmp
+# Documentation
+docs
+# Test files
+test
+# Build artifacts
+build
+# Miscellaneous
+.idea
+# Local configuration files
+*.local
+# Logs from the application
+logs
+# Dependency directories
