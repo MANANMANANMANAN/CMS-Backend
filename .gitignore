@@ -27,3 +27,5 @@ build
 # Logs from the application
 logs
 # Dependency directories
+
+/src/generated/prisma
