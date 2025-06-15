@@ -209,4 +209,8 @@ model course_queries {
   student             students            @relation(fields: [student_id], references: [student_id])
   course              all_courses         @relation(fields: [course_id], references: [course_id])
   course_announcement course_announcement @relation(fields: [announcement_id], references: [announcement_id])
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 014a246d9c8b71d12c1619e5885a310de2cae2c4
