@@ -9,12 +9,9 @@ A simple backend for managing users, courses, and registrations using Node.js, E
 project-root/
 ├── server/
 │ ├── controller/ # Route controllers
-│ ├── model/ # Sequelize models
 │ ├── routes/ # API routes
-│ ├── postgres/ # PostgreSQL connection logic
-│ ├── migrations/ # SQL migration files
-│ └── app.js # Express app
-├── src/migrations/ # SQL schema init scripts
+│ ├── prisma/migrations # SQL migration files
+│ └── server.js # Express app
 ├── .env # Environment variables
 ├── .gitignore
 ├── package.json
