@@ -34,3 +34,11 @@ npm install express nodemon dotenv prisma
 Create a .env file in the root with:
 PORT = 3000
 POSTGRES_DATABASE_URL = 
+
+Run the SQL schema creation:
+psql -U your_db_user -d your_db_name -f src/migrations/001_init.sql
+
+Start the Server:
+nodemon server/server.js
+
+
