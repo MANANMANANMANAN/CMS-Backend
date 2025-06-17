@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const {
-  createPreRegistration,
   getPreRegistrations,
   preRegistrationStatus
 } = require('../controllers/preRegistrationController');
 
-router.post('/create-registration', createPreRegistration);
-router.get('/pre-registrations', getPreRegistrations);
-router.patch('/registration-status',preRegistrationStatus);
+router.get('/faculty/courses/:courseId/pre-registrations', getPreRegistrations);
+router.patch('/faculty/courses/:courseId/pre-registrations/:studentId',preRegistrationStatus);
+// router.patch('/faculty/courses/:courseId/students/:studentId/pre-registration',preRegistrationStatus);
 
 module.exports = router;
