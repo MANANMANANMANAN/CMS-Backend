@@ -7,10 +7,62 @@ datasource db {
   url      = env("POSTGRES_DATABASE_URL")
 }
 
-model all_courses {
+model pre_final_courses {
+  course_id               String                    @id @db.VarChar(40)
+  course_code             String                    @db.VarChar(10)
+  course_name             String                    @db.VarChar(255)
+  school                  String                    @db.VarChar(20)
+  lecture                 Int                       @db.SmallInt
+  tutorial                Int                       @db.SmallInt
+  practical               Int                       @db.SmallInt
+  credits                 Int                       @db.SmallInt
+  slot                    String                    @default("N") @db.Char(1)
+  status                  Boolean?
+  prof_course_pre_final   prof_course_pre_final[]
+  pre_final_course_helper pre_final_course_helper[]
+}
+
+model pre_final_course_helper {
+  uid              String            @id @db.VarChar(40)
+  course_id        String            @db.VarChar(40)
+  branch           String            @db.VarChar(50)
+  course_type      fixed_course_type
+  semester         semesters
+  year             String            @db.VarChar(4)
+  pre_final_course pre_final_courses @relation(fields: [course_id], references: [course_id])
+}
+
+
+model prof_course_pre_final {
+  uid       String            @id @db.VarChar(40)
+  course_id String            @db.VarChar(40)
+  iid       String            @db.VarChar(40)
+  course    pre_final_courses @relation(fields: [course_id], references: [course_id])
+  professor professors        @relation(fields: [iid], references: [iid])
+}
+
+
+// model final_courses {
+//   course_id              String                   @id @db.VarChar(40)
+//   course_code            String                   @db.VarChar(10)
+//   course_name            String                   @db.VarChar(50)
+//   lecture                Int                      @db.SmallInt
+//   tutorial               Int                      @db.SmallInt
+//   practical              Int                      @db.SmallInt
+//   credits                Int                      @db.SmallInt
+//   slot                   String                   @default("N") @db.Char(1)
+//   course_helpers         course_helper[]
+//   student_registered     student_registered[]
+//   student_pre_registered student_pre_registered[]
+//   prof_course            prof_course[]
+//   course_queries         course_queries[]
+// }
+
+model final_courses {
   course_id              String                   @id @db.VarChar(40)
   course_code            String                   @db.VarChar(10)
-  course_name            String                   @db.VarChar(50)
+  course_name            String                   @db.VarChar(255)
+  school                 String                   @db.VarChar(20)
   lecture                Int                      @db.SmallInt
   tutorial               Int                      @db.SmallInt
   practical              Int                      @db.SmallInt
@@ -55,7 +107,7 @@ model course_helper {
   course_type fixed_course_type
   semester    semesters
   year        String            @db.VarChar(4)
-  course      all_courses       @relation(fields: [course_id], references: [course_id])
+  course      final_courses       @relation(fields: [course_id], references: [course_id])
 }
 
 model students {
@@ -91,7 +143,7 @@ model student_pre_registered {
   pre_reg_course_type fixed_course_type
   accept_reject       Boolean
   student             students          @relation(fields: [student_id], references: [student_id])
-  course              all_courses       @relation(fields: [course_id], references: [course_id])
+  course              final_courses       @relation(fields: [course_id], references: [course_id])
 }
 
 model student_lesser_credits {
@@ -109,14 +161,16 @@ model student_registered {
   reg_course_type fixed_course_type
   status          String            @default("I") @db.VarChar(2)
   student         students          @relation(fields: [student_id], references: [student_id])
-  course          all_courses       @relation(fields: [course_id], references: [course_id])
+  course          final_courses       @relation(fields: [course_id], references: [course_id])
 }
 
 model professors {
   iid                 String                @id @db.VarChar(40)
   prof_name           String                @db.VarChar(50)
   prof_email          String                @unique @db.VarChar(254)
+  school              String                @db.VarChar(20)
   prof_course         prof_course[]
+  prof_course_pre_final prof_course_pre_final[]
   prof_course_req     prof_course_req[]
   course_announcement course_announcement[]
 }
@@ -125,7 +179,7 @@ model prof_course {
   uid       String      @id @db.VarChar(40)
   iid       String      @db.VarChar(40)
   course_id String      @db.VarChar(40)
-  course    all_courses @relation(fields: [course_id], references: [course_id])
+  course    final_courses @relation(fields: [course_id], references: [course_id])
   professor professors  @relation(fields: [iid], references: [iid])
 }
 
@@ -133,7 +187,7 @@ model prof_course_req {
   request_id     String  @id @db.VarChar(40)
   iid            String  @db.VarChar(40)
   course_code    String  @db.VarChar(10)
-  accept_reject  Boolean
+  accept_reject  Boolean?
   chairperson_id String  @db.VarChar(40)
   slot           String  @default("N") @db.Char(1)
 
@@ -166,6 +220,7 @@ model admins {
 model chairperson {
   chairperson_id    String @id @db.VarChar(40)
   chairperson_name  String @db.VarChar(50)
+  chairperson_school String @db.VarChar(20)
   chairperson_email String @unique @db.VarChar(254)
 }
 
@@ -207,10 +262,6 @@ model course_queries {
   response            String
   responded           Boolean
   student             students            @relation(fields: [student_id], references: [student_id])
-  course              all_courses         @relation(fields: [course_id], references: [course_id])
+  course              final_courses         @relation(fields: [course_id], references: [course_id])
   course_announcement course_announcement @relation(fields: [announcement_id], references: [announcement_id])
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 014a246d9c8b71d12c1619e5885a310de2cae2c4
