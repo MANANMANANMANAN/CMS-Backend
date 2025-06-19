@@ -194,14 +194,13 @@ model prof_course {
 }
 
 model prof_course_req {
-  request_id     String  @id @db.VarChar(40)
-  iid            String  @db.VarChar(40)
-  course_code    String  @db.VarChar(10)
-  slot           String  @default("N") @db.Char(1)
-  chairperson_id String  @db.VarChar(40)
-  accept_reject  Boolean
-
-  professor professors @relation(fields: [iid], references: [iid])
+  request_id     String     @id @db.VarChar(40)
+  iid            String     @db.VarChar(40)
+  course_code    String     @db.VarChar(10)
+  slot           String     @default("N") @db.Char(1)
+  chairperson_id String     @db.VarChar(40)
+  accept_reject  Boolean?
+  professor      professors @relation(fields: [iid], references: [iid])
 }
 
 enum course_query_type {
@@ -231,6 +230,7 @@ model chairperson {
   chairperson_id    String @id @db.VarChar(40)
   chairperson_name  String @db.VarChar(255)
   chairperson_email String @unique @db.VarChar(254)
+  school            String @db.VarChar(20)
 }
 
 model announcement {
