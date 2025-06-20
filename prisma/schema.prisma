@@ -42,22 +42,6 @@ model prof_course_pre_final {
 }
 
 
-// model final_courses {
-//   course_id              String                   @id @db.VarChar(40)
-//   course_code            String                   @db.VarChar(10)
-//   course_name            String                   @db.VarChar(50)
-//   lecture                Int                      @db.SmallInt
-//   tutorial               Int                      @db.SmallInt
-//   practical              Int                      @db.SmallInt
-//   credits                Int                      @db.SmallInt
-//   slot                   String                   @default("N") @db.Char(1)
-//   course_helpers         course_helper[]
-//   student_registered     student_registered[]
-//   student_pre_registered student_pre_registered[]
-//   prof_course            prof_course[]
-//   course_queries         course_queries[]
-// }
-
 model final_courses {
   course_id              String                   @id @db.VarChar(40)
   course_code            String                   @db.VarChar(10)
