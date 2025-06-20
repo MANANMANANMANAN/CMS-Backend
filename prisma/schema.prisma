@@ -7,6 +7,31 @@ datasource db {
   url      = env("POSTGRES_DATABASE_URL")
 }
 
+enum roles {
+  student
+  faculty
+  admin
+  chairperson
+}
+
+model Users {
+  uid     String     @id @db.VarChar(40)
+  email   String     @unique @db.VarChar(254)
+  role    roles      @default(student)
+  student students?
+}
+
+model pre_final_course_helper {
+  uid              String            @id @db.VarChar(40)
+  course_id        String            @db.VarChar(40)
+  branch           String            @db.VarChar(50)
+  program          String            @db.VarChar(10)
+  course_type      fixed_course_type
+  semester         semesters
+  year             String            @db.VarChar(4)
+  pre_final_course pre_final_courses @relation(fields: [course_id], references: [course_id])
+}
+
 model pre_final_courses {
   course_id               String                    @id @db.VarChar(40)
   course_code             String                    @db.VarChar(10)
@@ -22,17 +47,6 @@ model pre_final_courses {
   pre_final_course_helper pre_final_course_helper[]
 }
 
-model pre_final_course_helper {
-  uid              String            @id @db.VarChar(40)
-  course_id        String            @db.VarChar(40)
-  branch           String            @db.VarChar(50)
-  course_type      fixed_course_type
-  semester         semesters
-  year             String            @db.VarChar(4)
-  pre_final_course pre_final_courses @relation(fields: [course_id], references: [course_id])
-}
-
-
 model prof_course_pre_final {
   uid       String            @id @db.VarChar(40)
   course_id String            @db.VarChar(40)
@@ -40,7 +54,6 @@ model prof_course_pre_final {
   course    pre_final_courses @relation(fields: [course_id], references: [course_id])
   professor professors        @relation(fields: [iid], references: [iid])
 }
-
 
 model final_courses {
   course_id              String                   @id @db.VarChar(40)
@@ -62,7 +75,7 @@ model final_courses {
 model done_courses {
   course_id            String                 @id @db.VarChar(40)
   course_code          String                 @db.VarChar(10)
-  course_name          String                 @db.VarChar(50)
+  course_name          String                 @db.VarChar(255)
   lecture              Int                    @db.SmallInt
   tutorial             Int                    @db.SmallInt
   practical            Int                    @db.SmallInt
@@ -87,21 +100,24 @@ enum semesters {
 model course_helper {
   uid         String            @id @db.VarChar(40)
   course_id   String            @db.VarChar(40)
-  branch      String            @db.VarChar(20)
+  branch      String            @db.VarChar(50)
+  program     String            @db.VarChar(10)
   course_type fixed_course_type
   semester    semesters
   year        String            @db.VarChar(4)
-  course      final_courses       @relation(fields: [course_id], references: [course_id])
+  course      final_courses     @relation(fields: [course_id], references: [course_id])
 }
 
 model students {
   student_id             String                   @id @db.VarChar(7)
-  student_name           String
-  branch                 String                   @db.VarChar(20)
+  student_name           String                   @db.VarChar(255)
+  branch                 String                   @db.VarChar(50)
   school                 String                   @db.VarChar(20)
   batch                  String                   @db.VarChar(4)
   program                String                   @db.VarChar(10)
   ldap_passwd            String
+  user_uid               String                   @unique @db.VarChar(40) // Make it unique if one student can only have one user account
+  user                   Users                    @relation(fields: [user_uid], references: [uid])
   student_done_courses   student_done_courses[]
   student_registered     student_registered[]
   student_pre_registered student_pre_registered[]
@@ -111,23 +127,33 @@ model students {
 }
 
 model student_done_courses {
-  uid        String       @id @db.VarChar(40)
-  course_id  String       @db.VarChar(40)
-  student_id String
+  uid                 String            @id @db.VarChar(40)
+  course_id           String            @db.VarChar(40)
+  student_id          String            @db.VarChar(7)
   done_as_course_type fixed_course_type
-  grade      String       @db.VarChar(2)
-  student    students     @relation(fields: [student_id], references: [student_id])
-  course     done_courses @relation(fields: [course_id], references: [course_id])
+  course_mode         course_modes      @default(regular)
+  grade               String            @db.VarChar(2)
+  student             students          @relation(fields: [student_id], references: [student_id])
+  course              done_courses      @relation(fields: [course_id], references: [course_id])
+}
+
+enum course_modes {
+  regular
+  audit
+  pass_fail
+  equivalent
+  backlog
 }
 
 model student_pre_registered {
   uid                 String            @id @db.VarChar(40)
-  student_id          String
+  student_id          String            @db.VarChar(7)
   course_id           String            @db.VarChar(40)
   pre_reg_course_type fixed_course_type
+  pre_reg_course_mode course_modes      @default(regular)
   accept_reject       Boolean
   student             students          @relation(fields: [student_id], references: [student_id])
-  course              final_courses       @relation(fields: [course_id], references: [course_id])
+  course              final_courses     @relation(fields: [course_id], references: [course_id])
 }
 
 model student_lesser_credits {
@@ -140,42 +166,42 @@ model student_lesser_credits {
 
 model student_registered {
   uid             String            @id @db.VarChar(40)
-  student_id      String
+  student_id      String            @db.VarChar(7)
   course_id       String            @db.VarChar(40)
   reg_course_type fixed_course_type
+  reg_course_mode course_modes      @default(regular)
   status          String            @default("I") @db.VarChar(2)
   student         students          @relation(fields: [student_id], references: [student_id])
-  course          final_courses       @relation(fields: [course_id], references: [course_id])
+  course          final_courses     @relation(fields: [course_id], references: [course_id])
 }
 
 model professors {
-  iid                 String                @id @db.VarChar(40)
-  prof_name           String                @db.VarChar(50)
-  prof_email          String                @unique @db.VarChar(254)
-  school              String                @db.VarChar(20)
-  prof_course         prof_course[]
+  iid                   String                  @id @db.VarChar(40)
+  prof_name             String                  @db.VarChar(50)
+  prof_email            String                  @unique @db.VarChar(254)
+  school                String                  @db.VarChar(20)
+  prof_course           prof_course[]
   prof_course_pre_final prof_course_pre_final[]
-  prof_course_req     prof_course_req[]
-  course_announcement course_announcement[]
+  prof_course_req       prof_course_req[]
+  course_announcement   course_announcement[]
 }
 
 model prof_course {
-  uid       String      @id @db.VarChar(40)
-  iid       String      @db.VarChar(40)
-  course_id String      @db.VarChar(40)
+  uid       String        @id @db.VarChar(40)
+  iid       String        @db.VarChar(40)
+  course_id String        @db.VarChar(40)
   course    final_courses @relation(fields: [course_id], references: [course_id])
-  professor professors  @relation(fields: [iid], references: [iid])
+  professor professors    @relation(fields: [iid], references: [iid])
 }
 
 model prof_course_req {
-  request_id     String  @id @db.VarChar(40)
-  iid            String  @db.VarChar(40)
-  course_code    String  @db.VarChar(10)
+  request_id     String     @id @db.VarChar(40)
+  iid            String     @db.VarChar(40)
+  course_code    String     @db.VarChar(10)
+  slot           String     @default("N") @db.Char(1)
+  chairperson_id String     @db.VarChar(40)
   accept_reject  Boolean?
-  chairperson_id String  @db.VarChar(40)
-  slot           String  @default("N") @db.Char(1)
-
-  professor professors @relation(fields: [iid], references: [iid])
+  professor      professors @relation(fields: [iid], references: [iid])
 }
 
 enum course_query_type {
@@ -196,16 +222,16 @@ enum announcement_query_type {
 
 model admins {
   admin_id      String         @id @db.VarChar(40)
-  admin_name    String         @db.VarChar(50)
+  admin_name    String         @db.VarChar(255)
   admin_email   String         @unique @db.VarChar(254)
   announcements announcement[]
 }
 
 model chairperson {
   chairperson_id    String @id @db.VarChar(40)
-  chairperson_name  String @db.VarChar(50)
-  chairperson_school String @db.VarChar(20)
+  chairperson_name  String @db.VarChar(255)
   chairperson_email String @unique @db.VarChar(254)
+  school            String @db.VarChar(20)
 }
 
 model announcement {
@@ -232,20 +258,20 @@ model course_announcement {
   announcement_id String           @id @db.VarChar(40)
   announcement    String
   iid             String           @db.VarChar(40)
-  professors      professors       @relation(fields: [iid], references: [iid])  
+  professors      professors       @relation(fields: [iid], references: [iid])
   course_queries  course_queries[]
 }
 
 model course_queries {
   query_id            String              @id @db.VarChar(40)
   student_id          String              @db.VarChar(7)
-  course_id           String              @db.VarChar(10)
+  course_id           String              @db.VarChar(40)
   announcement_id     String              @db.VarChar(40)
   query_type          course_query_type
   query               String
   response            String
   responded           Boolean
   student             students            @relation(fields: [student_id], references: [student_id])
-  course              final_courses         @relation(fields: [course_id], references: [course_id])
+  course              final_courses       @relation(fields: [course_id], references: [course_id])
   course_announcement course_announcement @relation(fields: [announcement_id], references: [announcement_id])
 }
