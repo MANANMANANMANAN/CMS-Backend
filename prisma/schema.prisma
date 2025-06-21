@@ -70,6 +70,7 @@ model final_courses {
   student_pre_registered student_pre_registered[]
   prof_course            prof_course[]
   course_queries         course_queries[]
+  @@index(fields:[course_id])
 }
 
 model done_courses {
@@ -82,6 +83,8 @@ model done_courses {
   credits              Int                    @db.SmallInt
   slot                 String                 @default("N") @db.Char(1)
   student_done_courses student_done_courses[]
+  @@index(fields: [course_id])
+
 }
 
 enum fixed_course_type {
@@ -106,6 +109,7 @@ model course_helper {
   semester    semesters
   year        String            @db.VarChar(4)
   course      final_courses     @relation(fields: [course_id], references: [course_id])
+  @@index(fields:[course_id])
 }
 
 model students {
@@ -124,6 +128,7 @@ model students {
   announcement_queries   announcement_queries[]
   course_queries         course_queries[]
   student_lesser_credits student_lesser_credits[]
+  @@index(fields: [student_id])
 }
 
 model student_done_courses {
@@ -135,6 +140,8 @@ model student_done_courses {
   grade               String            @db.VarChar(2)
   student             students          @relation(fields: [student_id], references: [student_id])
   course              done_courses      @relation(fields: [course_id], references: [course_id])
+  @@index(fields: [student_id, course_id])
+
 }
 
 enum course_modes {
@@ -154,6 +161,8 @@ model student_pre_registered {
   accept_reject       Boolean
   student             students          @relation(fields: [student_id], references: [student_id])
   course              final_courses     @relation(fields: [course_id], references: [course_id])
+  @@index(fields: [student_id, course_id])
+
 }
 
 model student_lesser_credits {
@@ -173,6 +182,8 @@ model student_registered {
   status          String            @default("I") @db.VarChar(2)
   student         students          @relation(fields: [student_id], references: [student_id])
   course          final_courses     @relation(fields: [course_id], references: [course_id])
+
+  @@index(fields: [student_id, course_id])
 }
 
 model professors {
