@@ -6,7 +6,7 @@ const {
 } = require('../controllers/preRegistrationController');
 
 router.get('/courses/:courseId/pre-registrations', getPreRegistrations);
-router.patch('/courses/:courseId/pre-registrations/:studentId',preRegistrationStatus);
+router.put('/courses/:courseId/pre-registrations/:studentId',preRegistrationStatus);
 // router.patch('/faculty/courses/:courseId/students/:studentId/pre-registration',preRegistrationStatus);
 
 module.exports = router;

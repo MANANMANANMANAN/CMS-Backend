@@ -48,9 +48,47 @@ exports.preRegistrationStatus =  async (req, res) => {
       return res.status(404).json({ message: 'No pre-registration found.' });
     }
 
-    res.json({ message: `Student ${accept_reject ? 'accepted' : 'rejected'} successfully.` });
+    // 2. If accepted, add to student_registered
+    if (accept_reject === true) {
+      // Fetch course type from pre-registration to keep consistency
+      const preRegEntry = await prisma.student_pre_registered.findFirst({
+        where: {
+          course_id: courseId,
+          student_id: studentId,
+        },
+      });
+
+      if (!preRegEntry) {
+        return res.status(404).json({ message: 'Pre-registration data not found.' });
+      }
+
+      // Check if already registered
+      const alreadyRegistered = await prisma.student_registered.findFirst({
+        where: {
+          course_id: courseId,
+          student_id: studentId,
+        },
+      });
+
+      if (!alreadyRegistered) {
+        await prisma.student_registered.create({
+          data: {
+            uid: `reg_${studentId}_${courseId}`,
+            student_id: studentId,
+            course_id: courseId,
+            reg_course_type: preRegEntry.pre_reg_course_type,
+            status: 'I',  // grades status
+          },
+        });
+      }
+    }
+
+    res.json({
+      message: `Student ${accept_reject ? 'accepted and registered' : 'rejected'} successfully.`,
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update pre-registration status.' });
+    res.status(500).json({ error: 'Failed to update pre-registration status.', 
+                            message:err });
   }
 };
 
