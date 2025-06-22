@@ -243,7 +243,6 @@ model chairperson {
   chairperson_name  String @db.VarChar(255)
   chairperson_school String @db.VarChar(20)
   chairperson_email String @unique @db.VarChar(254)
-  school            String @db.VarChar(20)
 }
 
 model announcement {
