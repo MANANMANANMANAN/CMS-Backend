@@ -7,8 +7,6 @@ const registrationRoutes = require('./routes/registrationRoutes');
 const courseRoutes = require("./routes/courseRoutes");
 const profCourseReqRoutes = require("./routes/profCourseReqRoutes");
 
-
-
 dotenv.config();
 
 const app = express();

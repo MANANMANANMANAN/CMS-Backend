@@ -1,8 +1,14 @@
 -- CreateEnum
+CREATE TYPE "roles" AS ENUM ('student', 'faculty', 'admin', 'chairperson');
+
+-- CreateEnum
 CREATE TYPE "fixed_course_type" AS ENUM ('IC', 'DC', 'DE', 'FE', 'HSS');
 
 -- CreateEnum
 CREATE TYPE "semesters" AS ENUM ('even', 'odd');
+
+-- CreateEnum
+CREATE TYPE "course_modes" AS ENUM ('regular', 'audit', 'pass_fail', 'equivalent', 'backlog');
 
 -- CreateEnum
 CREATE TYPE "course_query_type" AS ENUM ('course_transition', 'slot_clash', 'slot_change', 'curriculum', 'course_query', 'Others');
@@ -11,24 +17,72 @@ CREATE TYPE "course_query_type" AS ENUM ('course_transition', 'slot_clash', 'slo
 CREATE TYPE "announcement_query_type" AS ENUM ('slot_change', 'course_add', 'course_drop', 'Others');
 
 -- CreateTable
-CREATE TABLE "all_courses" (
+CREATE TABLE "Users" (
+    "uid" VARCHAR(40) NOT NULL,
+    "email" VARCHAR(254) NOT NULL,
+    "role" "roles" NOT NULL DEFAULT 'student',
+
+    CONSTRAINT "Users_pkey" PRIMARY KEY ("uid")
+);
+
+-- CreateTable
+CREATE TABLE "pre_final_course_helper" (
+    "uid" VARCHAR(40) NOT NULL,
+    "course_id" VARCHAR(40) NOT NULL,
+    "branch" VARCHAR(50) NOT NULL,
+    "program" VARCHAR(10) NOT NULL,
+    "course_type" "fixed_course_type" NOT NULL,
+    "semester" "semesters" NOT NULL,
+    "year" VARCHAR(4) NOT NULL,
+
+    CONSTRAINT "pre_final_course_helper_pkey" PRIMARY KEY ("uid")
+);
+
+-- CreateTable
+CREATE TABLE "pre_final_courses" (
     "course_id" VARCHAR(40) NOT NULL,
     "course_code" VARCHAR(10) NOT NULL,
-    "course_name" VARCHAR(50) NOT NULL,
+    "course_name" VARCHAR(255) NOT NULL,
+    "school" VARCHAR(20) NOT NULL,
+    "lecture" SMALLINT NOT NULL,
+    "tutorial" SMALLINT NOT NULL,
+    "practical" SMALLINT NOT NULL,
+    "credits" SMALLINT NOT NULL,
+    "slot" CHAR(1) NOT NULL DEFAULT 'N',
+    "status" BOOLEAN,
+
+    CONSTRAINT "pre_final_courses_pkey" PRIMARY KEY ("course_id")
+);
+
+-- CreateTable
+CREATE TABLE "prof_course_pre_final" (
+    "uid" VARCHAR(40) NOT NULL,
+    "course_id" VARCHAR(40) NOT NULL,
+    "iid" VARCHAR(40) NOT NULL,
+
+    CONSTRAINT "prof_course_pre_final_pkey" PRIMARY KEY ("uid")
+);
+
+-- CreateTable
+CREATE TABLE "final_courses" (
+    "course_id" VARCHAR(40) NOT NULL,
+    "course_code" VARCHAR(10) NOT NULL,
+    "course_name" VARCHAR(255) NOT NULL,
+    "school" VARCHAR(20) NOT NULL,
     "lecture" SMALLINT NOT NULL,
     "tutorial" SMALLINT NOT NULL,
     "practical" SMALLINT NOT NULL,
     "credits" SMALLINT NOT NULL,
     "slot" CHAR(1) NOT NULL DEFAULT 'N',
 
-    CONSTRAINT "all_courses_pkey" PRIMARY KEY ("course_id")
+    CONSTRAINT "final_courses_pkey" PRIMARY KEY ("course_id")
 );
 
 -- CreateTable
 CREATE TABLE "done_courses" (
     "course_id" VARCHAR(40) NOT NULL,
     "course_code" VARCHAR(10) NOT NULL,
-    "course_name" VARCHAR(50) NOT NULL,
+    "course_name" VARCHAR(255) NOT NULL,
     "lecture" SMALLINT NOT NULL,
     "tutorial" SMALLINT NOT NULL,
     "practical" SMALLINT NOT NULL,
@@ -42,7 +96,8 @@ CREATE TABLE "done_courses" (
 CREATE TABLE "course_helper" (
     "uid" VARCHAR(40) NOT NULL,
     "course_id" VARCHAR(40) NOT NULL,
-    "branch" VARCHAR(20) NOT NULL,
+    "branch" VARCHAR(50) NOT NULL,
+    "program" VARCHAR(10) NOT NULL,
     "course_type" "fixed_course_type" NOT NULL,
     "semester" "semesters" NOT NULL,
     "year" VARCHAR(4) NOT NULL,
@@ -53,8 +108,8 @@ CREATE TABLE "course_helper" (
 -- CreateTable
 CREATE TABLE "students" (
     "student_id" VARCHAR(7) NOT NULL,
-    "student_name" TEXT NOT NULL,
-    "branch" VARCHAR(20) NOT NULL,
+    "student_name" VARCHAR(255) NOT NULL,
+    "branch" VARCHAR(50) NOT NULL,
     "school" VARCHAR(20) NOT NULL,
     "batch" VARCHAR(4) NOT NULL,
     "program" VARCHAR(10) NOT NULL,
@@ -67,8 +122,9 @@ CREATE TABLE "students" (
 CREATE TABLE "student_done_courses" (
     "uid" VARCHAR(40) NOT NULL,
     "course_id" VARCHAR(40) NOT NULL,
-    "student_id" TEXT NOT NULL,
+    "student_id" VARCHAR(7) NOT NULL,
     "done_as_course_type" "fixed_course_type" NOT NULL,
+    "course_mode" "course_modes" NOT NULL DEFAULT 'regular',
     "grade" VARCHAR(2) NOT NULL,
 
     CONSTRAINT "student_done_courses_pkey" PRIMARY KEY ("uid")
@@ -77,9 +133,10 @@ CREATE TABLE "student_done_courses" (
 -- CreateTable
 CREATE TABLE "student_pre_registered" (
     "uid" VARCHAR(40) NOT NULL,
-    "student_id" TEXT NOT NULL,
+    "student_id" VARCHAR(7) NOT NULL,
     "course_id" VARCHAR(40) NOT NULL,
     "pre_reg_course_type" "fixed_course_type" NOT NULL,
+    "pre_reg_course_mode" "course_modes" NOT NULL DEFAULT 'regular',
     "accept_reject" BOOLEAN NOT NULL,
 
     CONSTRAINT "student_pre_registered_pkey" PRIMARY KEY ("uid")
@@ -98,9 +155,10 @@ CREATE TABLE "student_lesser_credits" (
 -- CreateTable
 CREATE TABLE "student_registered" (
     "uid" VARCHAR(40) NOT NULL,
-    "student_id" TEXT NOT NULL,
+    "student_id" VARCHAR(7) NOT NULL,
     "course_id" VARCHAR(40) NOT NULL,
     "reg_course_type" "fixed_course_type" NOT NULL,
+    "reg_course_mode" "course_modes" NOT NULL DEFAULT 'regular',
     "status" VARCHAR(2) NOT NULL DEFAULT 'I',
 
     CONSTRAINT "student_registered_pkey" PRIMARY KEY ("uid")
@@ -111,6 +169,7 @@ CREATE TABLE "professors" (
     "iid" VARCHAR(40) NOT NULL,
     "prof_name" VARCHAR(50) NOT NULL,
     "prof_email" VARCHAR(254) NOT NULL,
+    "school" VARCHAR(20) NOT NULL,
 
     CONSTRAINT "professors_pkey" PRIMARY KEY ("iid")
 );
@@ -129,9 +188,9 @@ CREATE TABLE "prof_course_req" (
     "request_id" VARCHAR(40) NOT NULL,
     "iid" VARCHAR(40) NOT NULL,
     "course_code" VARCHAR(10) NOT NULL,
-    "accept_reject" BOOLEAN NOT NULL,
-    "chairperson_id" VARCHAR(40) NOT NULL,
     "slot" CHAR(1) NOT NULL DEFAULT 'N',
+    "chairperson_id" VARCHAR(40) NOT NULL,
+    "accept_reject" BOOLEAN,
 
     CONSTRAINT "prof_course_req_pkey" PRIMARY KEY ("request_id")
 );
@@ -139,7 +198,7 @@ CREATE TABLE "prof_course_req" (
 -- CreateTable
 CREATE TABLE "admins" (
     "admin_id" VARCHAR(40) NOT NULL,
-    "admin_name" VARCHAR(50) NOT NULL,
+    "admin_name" VARCHAR(255) NOT NULL,
     "admin_email" VARCHAR(254) NOT NULL,
 
     CONSTRAINT "admins_pkey" PRIMARY KEY ("admin_id")
@@ -148,7 +207,8 @@ CREATE TABLE "admins" (
 -- CreateTable
 CREATE TABLE "chairperson" (
     "chairperson_id" VARCHAR(40) NOT NULL,
-    "chairperson_name" VARCHAR(50) NOT NULL,
+    "chairperson_name" VARCHAR(255) NOT NULL,
+    "chairperson_school" VARCHAR(20) NOT NULL,
     "chairperson_email" VARCHAR(254) NOT NULL,
 
     CONSTRAINT "chairperson_pkey" PRIMARY KEY ("chairperson_id")
@@ -189,7 +249,7 @@ CREATE TABLE "course_announcement" (
 CREATE TABLE "course_queries" (
     "query_id" VARCHAR(40) NOT NULL,
     "student_id" VARCHAR(7) NOT NULL,
-    "course_id" VARCHAR(10) NOT NULL,
+    "course_id" VARCHAR(40) NOT NULL,
     "announcement_id" VARCHAR(40) NOT NULL,
     "query_type" "course_query_type" NOT NULL,
     "query" TEXT NOT NULL,
@@ -198,6 +258,9 @@ CREATE TABLE "course_queries" (
 
     CONSTRAINT "course_queries_pkey" PRIMARY KEY ("query_id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Users_email_key" ON "Users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "professors_prof_email_key" ON "professors"("prof_email");
@@ -209,7 +272,19 @@ CREATE UNIQUE INDEX "admins_admin_email_key" ON "admins"("admin_email");
 CREATE UNIQUE INDEX "chairperson_chairperson_email_key" ON "chairperson"("chairperson_email");
 
 -- AddForeignKey
-ALTER TABLE "course_helper" ADD CONSTRAINT "course_helper_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "all_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "pre_final_course_helper" ADD CONSTRAINT "pre_final_course_helper_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "pre_final_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "prof_course_pre_final" ADD CONSTRAINT "prof_course_pre_final_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "pre_final_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "prof_course_pre_final" ADD CONSTRAINT "prof_course_pre_final_iid_fkey" FOREIGN KEY ("iid") REFERENCES "professors"("iid") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "course_helper" ADD CONSTRAINT "course_helper_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "final_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "students" ADD CONSTRAINT "students_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "Users"("uid") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "student_done_courses" ADD CONSTRAINT "student_done_courses_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "students"("student_id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -221,7 +296,7 @@ ALTER TABLE "student_done_courses" ADD CONSTRAINT "student_done_courses_course_i
 ALTER TABLE "student_pre_registered" ADD CONSTRAINT "student_pre_registered_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "students"("student_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "student_pre_registered" ADD CONSTRAINT "student_pre_registered_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "all_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "student_pre_registered" ADD CONSTRAINT "student_pre_registered_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "final_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "student_lesser_credits" ADD CONSTRAINT "student_lesser_credits_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "students"("student_id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -230,10 +305,10 @@ ALTER TABLE "student_lesser_credits" ADD CONSTRAINT "student_lesser_credits_stud
 ALTER TABLE "student_registered" ADD CONSTRAINT "student_registered_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "students"("student_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "student_registered" ADD CONSTRAINT "student_registered_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "all_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "student_registered" ADD CONSTRAINT "student_registered_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "final_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "prof_course" ADD CONSTRAINT "prof_course_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "all_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "prof_course" ADD CONSTRAINT "prof_course_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "final_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "prof_course" ADD CONSTRAINT "prof_course_iid_fkey" FOREIGN KEY ("iid") REFERENCES "professors"("iid") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -257,7 +332,7 @@ ALTER TABLE "course_announcement" ADD CONSTRAINT "course_announcement_iid_fkey" 
 ALTER TABLE "course_queries" ADD CONSTRAINT "course_queries_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "students"("student_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "course_queries" ADD CONSTRAINT "course_queries_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "all_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "course_queries" ADD CONSTRAINT "course_queries_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "final_courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "course_queries" ADD CONSTRAINT "course_queries_announcement_id_fkey" FOREIGN KEY ("announcement_id") REFERENCES "course_announcement"("announcement_id") ON DELETE RESTRICT ON UPDATE CASCADE;

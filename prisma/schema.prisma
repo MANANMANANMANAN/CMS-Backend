@@ -199,7 +199,7 @@ model prof_course_req {
   course_code    String  @db.VarChar(10)
   slot           String  @default("N") @db.Char(1)
   chairperson_id String  @db.VarChar(40)
-  accept_reject  Boolean
+  accept_reject  Boolean?
 
   professor professors @relation(fields: [iid], references: [iid])
 }
@@ -230,6 +230,7 @@ model admins {
 model chairperson {
   chairperson_id    String @id @db.VarChar(40)
   chairperson_name  String @db.VarChar(255)
+  chairperson_school String @db.VarChar(20)
   chairperson_email String @unique @db.VarChar(254)
 }
 

@@ -2,109 +2,82 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  // Add dummy students
-  await prisma.students.create({
-    data: {
-      student_id: 'S100001',
-      student_name: 'Alice Kumar',
-      branch: 'CSE',
-      school: 'SoICT',
-      batch: '2022',
-      program: 'BTech',
-      ldap_passwd: 'password123',
-    },
-  });
-
-  // Add dummy professor
-  await prisma.professors.create({
-    data: {
-      iid: 'P100001',
-      prof_name: 'Dr. John Doe',
-      prof_email: 'johndoe@example.com',
-    },
-  });
-
-  // Add dummy chairperson
-  await prisma.chairperson.create({
-    data: {
-      chairperson_id: 'C100001',
-      chairperson_name: 'Dr. Jane Smith',
-      chairperson_email: 'janesmith@example.com',
-    },
-  });
-
-  // Add dummy course
-  await prisma.all_courses.create({
-    data: {
-      course_id: 'COURSE001',
-      course_code: 'CS101',
-      course_name: 'Introduction to Programming',
+  // Create a sample course
+  const course = await prisma.final_courses.upsert({
+    where: { course_id: 'course3' },
+    update: {},
+    create: {
+      course_id: 'course3',
+      course_code: 'CS301',
+      course_name: 'Advanced Algorithms',
+      school: 'SCEE',
       lecture: 3,
       tutorial: 1,
       practical: 2,
       credits: 4,
+      slot: 'B'
     },
   });
 
-  // Add dummy course_helper
-  await prisma.course_helper.create({
-    data: {
-      uid: 'CH001',
-      course_id: 'COURSE001',
+  // Create a sample student
+  const student = await prisma.students.upsert({
+    where: { student_id: 'S100001' },
+    update: {},
+    create: {
+      student_id: 'S100001',
+      student_name: 'Alice Sharma',
       branch: 'CSE',
-      course_type: 'IC',
-      semester: 'odd',
-      year: '2024',
-    },
+      school: 'SCEE',
+      batch: '2022',
+      program: 'BTech',
+      ldap_passwd: 'test123'
+    }
   });
 
-  // Add dummy student_pre_registered
+  // Pre-registration
   await prisma.student_pre_registered.create({
     data: {
-      uid: 'PR001',
-      student_id: 'S100001',
-      course_id: 'COURSE001',
+      uid: 'prereg1',
+      student_id: student.student_id,
+      course_id: course.course_id,
       pre_reg_course_type: 'IC',
-      accept_reject: false,
-    },
+      accept_reject: true
+    }
   });
 
-  // Add dummy student_registered
+  // Registration (finalized)
   await prisma.student_registered.create({
     data: {
-      uid: 'R001',
-      student_id: 'S100001',
-      course_id: 'COURSE001',
+      uid: 'reg1',
+      student_id: student.student_id,
+      course_id: course.course_id,
       reg_course_type: 'IC',
-      status: 'I',
-    },
+      status: 'A'
+    }
   });
 
-  // Add dummy done_course
-  await prisma.done_courses.create({
+  // Create a professor
+  const prof = await prisma.professors.upsert({
+    where: { iid: 'P1001' },
+    update: {},
+    create: {
+      iid: 'P1001',
+      prof_name: 'Dr. Arjun Verma',
+      prof_email: 'arjun@example.com',
+      school: 'SCEE',
+    }
+  });
+
+  // Assign professor to course
+  await prisma.prof_course.create({
     data: {
-      course_id: 'DONE001',
-      course_code: 'CS100',
-      course_name: 'Basics of Computers',
-      lecture: 2,
-      tutorial: 1,
-      practical: 1,
-      credits: 3,
-    },
+      uid: 'prof_course_1',
+      iid: prof.iid,
+      course_id: course.course_id
+    }
   });
 
-  // Add dummy student_done_courses
-  await prisma.student_done_courses.create({
-    data: {
-      uid: 'SD001',
-      course_id: 'DONE001',
-      student_id: 'S100001',
-      done_as_course_type: 'IC',
-      grade: 'A+',
-    },
-  });
-
-  console.log('✅ Dummy data inserted');
+  console.log('Seed data inserted ✅');
 }
 
 main()
