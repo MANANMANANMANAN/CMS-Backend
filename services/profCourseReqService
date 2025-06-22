@@ -81,6 +81,32 @@ const cancelCourseRequest = async (profId, courseId) => {
   return { message: "Request cancelled successfully." };
 };
 
+const resolveRequest = async (acceptIds, rejectIds) => {
+  // Update all accepted IDs: set accept_reject = true
+  await Promise.all(
+    acceptIds.map(id =>
+      prisma.prof_course_req.update({
+        where: { request_id: id },
+        data: { accept_reject: true },
+      })
+    )
+  );
+
+  // Update all rejected IDs: set accept_reject = false
+  await Promise.all(
+    rejectIds.map(id =>
+      prisma.prof_course_req.update({
+        where: { request_id: id },
+        data: { accept_reject: false },
+      })
+    )
+  );
+
+  return { message: "Request RESOLVED successfully." };
+};
+
+
+
 const getCoursesRequestedByProfessor = async (profId) => {
   return await prisma.prof_course_pre_final.findMany({
     where: { iid: profId },
@@ -100,4 +126,5 @@ module.exports = {
   cancelCourseRequest,
   getCoursesRequestedByProfessor,
   getProfessorsRequestedCourse,
+  resolveRequest;
 };
