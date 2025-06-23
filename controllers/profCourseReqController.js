@@ -51,8 +51,19 @@ const getProfessorsByCourse = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
+const AcceptRejectCourse = async (req, res) => {
+  const { acceptIds,rejectIds } = req.body;
+  try {
+      const message = await profCourseReqService.resolveRequest(
+      acceptIds,rejectIds
+    );
+    res.status(200).json({ message });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 module.exports = {
+  AcceptRejectCourse,
   requestCourse,
   cancelCourse,
   getCoursesByProfessor,
