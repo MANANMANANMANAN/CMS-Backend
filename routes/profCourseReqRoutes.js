@@ -4,7 +4,7 @@ const profCourseReqController = require("../controllers/profCourseReqController"
 
 router.post("/request-course", profCourseReqController.requestCourse);
 router.delete("/cancel-course", profCourseReqController.cancelCourse);
-// router.post("/accept-reject",profCourseReqController.AcceptRejectCourse);
+router.post("/accept-reject",profCourseReqController.AcceptRejectCourse);
 router.get(
   "/prof-requests/:profId",
   profCourseReqController.getCoursesByProfessor
