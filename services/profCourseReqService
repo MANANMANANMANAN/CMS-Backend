@@ -9,7 +9,7 @@ const createCourseRequest = async (profId, courseId) => {
   const existingRequests = await prisma.prof_course_req.findMany({
     where: { iid: profId },
   });
-
+  
   const pendingCount = existingRequests.filter(
     (req) => req.accept_reject === null
   ).length;
@@ -30,11 +30,11 @@ const createCourseRequest = async (profId, courseId) => {
     where: { chairperson_school: course.school },
   });
   if (!chairperson) throw new Error("Chairperson not found for the school.");
-
+  const id = generateUniqueId()
   // Insert into prof_course_pre_final (relation definition)
   await prisma.prof_course_pre_final.create({
     data: {
-      uid: generateUniqueId(),
+      uid: id,
       course_id: courseId,
       iid: profId,
     },
@@ -43,7 +43,7 @@ const createCourseRequest = async (profId, courseId) => {
   // Insert request into prof_course_req
   const newRequest = await prisma.prof_course_req.create({
     data: {
-      request_id: generateUniqueId(),
+      request_id: id,
       iid: profId,
       course_code: course.course_code,
       chairperson_id: chairperson.chairperson_id,
