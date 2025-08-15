@@ -7,17 +7,10 @@ datasource db {
   url      = env("POSTGRES_DATABASE_URL")
 }
 
-enum roles {
-  student
-  faculty
-  admin
-  chairperson
-}
-
 model Users {
-  uid     String     @id @db.VarChar(40)
-  email   String     @unique @db.VarChar(254)
-  role    roles      @default(student)
+  uid     String    @id @db.VarChar(40)
+  email   String    @unique @db.VarChar(254)
+  role    roles     @default(student)
   student students?
 }
 
@@ -25,10 +18,10 @@ model pre_final_course_helper {
   uid              String            @id @db.VarChar(40)
   course_id        String            @db.VarChar(40)
   branch           String            @db.VarChar(50)
-  program          String            @db.VarChar(10)
   course_type      fixed_course_type
   semester         semesters
   year             String            @db.VarChar(4)
+  program          String            @db.VarChar(10)
   pre_final_course pre_final_courses @relation(fields: [course_id], references: [course_id])
 }
 
@@ -43,8 +36,8 @@ model pre_final_courses {
   credits                 Int                       @db.SmallInt
   slot                    String                    @default("N") @db.Char(1)
   status                  Boolean?
-  prof_course_pre_final   prof_course_pre_final[]
   pre_final_course_helper pre_final_course_helper[]
+  prof_course_pre_final   prof_course_pre_final[]
 }
 
 model prof_course_pre_final {
@@ -66,11 +59,12 @@ model final_courses {
   credits                Int                      @db.SmallInt
   slot                   String                   @default("N") @db.Char(1)
   course_helpers         course_helper[]
-  student_registered     student_registered[]
-  student_pre_registered student_pre_registered[]
-  prof_course            prof_course[]
   course_queries         course_queries[]
-  @@index(fields:[course_id])
+  prof_course            prof_course[]
+  student_pre_registered student_pre_registered[]
+  student_registered     student_registered[]
+
+  @@index([course_id])
 }
 
 model done_courses {
@@ -83,33 +77,21 @@ model done_courses {
   credits              Int                    @db.SmallInt
   slot                 String                 @default("N") @db.Char(1)
   student_done_courses student_done_courses[]
-  @@index(fields: [course_id])
 
-}
-
-enum fixed_course_type {
-  IC
-  DC
-  DE
-  FE
-  HSS
-}
-
-enum semesters {
-  even
-  odd
+  @@index([course_id])
 }
 
 model course_helper {
   uid         String            @id @db.VarChar(40)
   course_id   String            @db.VarChar(40)
   branch      String            @db.VarChar(50)
-  program     String            @db.VarChar(10)
   course_type fixed_course_type
   semester    semesters
   year        String            @db.VarChar(4)
+  program     String            @db.VarChar(10)
   course      final_courses     @relation(fields: [course_id], references: [course_id])
-  @@index(fields:[course_id])
+
+  @@index([course_id])
 }
 
 model students {
@@ -120,15 +102,16 @@ model students {
   batch                  String                   @db.VarChar(4)
   program                String                   @db.VarChar(10)
   ldap_passwd            String
-  user_uid               String                   @unique @db.VarChar(40) // Make it unique if one student can only have one user account
-  user                   Users                    @relation(fields: [user_uid], references: [uid])
-  student_done_courses   student_done_courses[]
-  student_registered     student_registered[]
-  student_pre_registered student_pre_registered[]
+  user_uid               String                   @unique @db.VarChar(40)
   announcement_queries   announcement_queries[]
   course_queries         course_queries[]
+  student_done_courses   student_done_courses[]
   student_lesser_credits student_lesser_credits[]
-  @@index(fields: [student_id])
+  student_pre_registered student_pre_registered[]
+  student_registered     student_registered[]
+  user                   Users                    @relation(fields: [user_uid], references: [uid])
+
+  @@index([student_id])
 }
 
 model student_done_courses {
@@ -136,20 +119,12 @@ model student_done_courses {
   course_id           String            @db.VarChar(40)
   student_id          String            @db.VarChar(7)
   done_as_course_type fixed_course_type
-  course_mode         course_modes      @default(regular)
   grade               String            @db.VarChar(2)
-  student             students          @relation(fields: [student_id], references: [student_id])
+  course_mode         course_modes      @default(regular)
   course              done_courses      @relation(fields: [course_id], references: [course_id])
-  @@index(fields: [student_id, course_id])
+  student             students          @relation(fields: [student_id], references: [student_id])
 
-}
-
-enum course_modes {
-  regular
-  audit
-  pass_fail
-  equivalent
-  backlog
+  @@index([student_id, course_id])
 }
 
 model student_pre_registered {
@@ -157,12 +132,12 @@ model student_pre_registered {
   student_id          String            @db.VarChar(7)
   course_id           String            @db.VarChar(40)
   pre_reg_course_type fixed_course_type
-  pre_reg_course_mode course_modes      @default(regular)
   accept_reject       Boolean
-  student             students          @relation(fields: [student_id], references: [student_id])
+  pre_reg_course_mode course_modes      @default(regular)
   course              final_courses     @relation(fields: [course_id], references: [course_id])
-  @@index(fields: [student_id, course_id])
+  student             students          @relation(fields: [student_id], references: [student_id])
 
+  @@index([student_id, course_id])
 }
 
 model student_lesser_credits {
@@ -178,12 +153,12 @@ model student_registered {
   student_id      String            @db.VarChar(7)
   course_id       String            @db.VarChar(40)
   reg_course_type fixed_course_type
-  reg_course_mode course_modes      @default(regular)
   status          String            @default("I") @db.VarChar(2)
-  student         students          @relation(fields: [student_id], references: [student_id])
+  reg_course_mode course_modes      @default(regular)
   course          final_courses     @relation(fields: [course_id], references: [course_id])
+  student         students          @relation(fields: [student_id], references: [student_id])
 
-  @@index(fields: [student_id, course_id])
+  @@index([student_id, course_id])
 }
 
 model professors {
@@ -191,10 +166,10 @@ model professors {
   prof_name             String                  @db.VarChar(50)
   prof_email            String                  @unique @db.VarChar(254)
   school                String                  @db.VarChar(20)
+  course_announcement   course_announcement[]
   prof_course           prof_course[]
   prof_course_pre_final prof_course_pre_final[]
   prof_course_req       prof_course_req[]
-  course_announcement   course_announcement[]
 }
 
 model prof_course {
@@ -206,29 +181,13 @@ model prof_course {
 }
 
 model prof_course_req {
-  request_id     String  @id @db.VarChar(40)
-  iid            String  @db.VarChar(40)
-  course_code    String  @db.VarChar(10)
-  slot           String  @default("N") @db.Char(1)
-  chairperson_id String  @db.VarChar(40)
+  request_id     String     @id @db.VarChar(40)
+  iid            String     @db.VarChar(40)
+  course_code    String     @db.VarChar(10)
   accept_reject  Boolean?
-  professor professors @relation(fields: [iid], references: [iid])
-}
-
-enum course_query_type {
-  course_transition
-  slot_clash
-  slot_change
-  curriculum
-  course_query
-  Others
-}
-
-enum announcement_query_type {
-  slot_change
-  course_add
-  course_drop
-  Others
+  chairperson_id String     @db.VarChar(40)
+  slot           String     @default("N") @db.Char(1)
+  professor      professors @relation(fields: [iid], references: [iid])
 }
 
 model admins {
@@ -241,16 +200,16 @@ model admins {
 model chairperson {
   chairperson_id    String @id @db.VarChar(40)
   chairperson_name  String @db.VarChar(255)
-  chairperson_school String @db.VarChar(20)
   chairperson_email String @unique @db.VarChar(254)
+  school            String @db.VarChar(20)
 }
 
 model announcement {
   announcement_id      String                 @id @db.VarChar(40)
   announcement         String
   admin_id             String                 @db.VarChar(40)
-  announcement_queries announcement_queries[]
   admin                admins                 @relation(fields: [admin_id], references: [admin_id])
+  announcement_queries announcement_queries[]
 }
 
 model announcement_queries {
@@ -261,8 +220,8 @@ model announcement_queries {
   query_type      announcement_query_type
   response        String
   responded       Boolean
-  student         students                @relation(fields: [student_id], references: [student_id])
   announcement    announcement            @relation(fields: [announcement_id], references: [announcement_id])
+  student         students                @relation(fields: [student_id], references: [student_id])
 }
 
 model course_announcement {
@@ -282,7 +241,51 @@ model course_queries {
   query               String
   response            String
   responded           Boolean
-  student             students            @relation(fields: [student_id], references: [student_id])
-  course              final_courses       @relation(fields: [course_id], references: [course_id])
   course_announcement course_announcement @relation(fields: [announcement_id], references: [announcement_id])
+  course              final_courses       @relation(fields: [course_id], references: [course_id])
+  student             students            @relation(fields: [student_id], references: [student_id])
+}
+
+enum roles {
+  student
+  faculty
+  admin
+  chairperson
+}
+
+enum fixed_course_type {
+  IC
+  DC
+  DE
+  FE
+  HSS
+}
+
+enum semesters {
+  even
+  odd
+}
+
+enum course_modes {
+  regular
+  audit
+  pass_fail
+  equivalent
+  backlog
+}
+
+enum course_query_type {
+  course_transition
+  slot_clash
+  slot_change
+  curriculum
+  course_query
+  Others
+}
+
+enum announcement_query_type {
+  slot_change
+  course_add
+  course_drop
+  Others
 }
