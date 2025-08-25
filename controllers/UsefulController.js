@@ -1,24 +1,153 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { generateToken } = require('../middleware/auth'); // adjust path as needed
-exports.requestCourse = async (req, res) => { 
-  const { courseCodes, iid } = req.body; 
-   
-  try { 
+const bcrypt = require('bcryptjs');
+async function verifyPassword(password, hash) {
+  // now compare the input with stored hash
+  return bcrypt.compare(password, hash);
+}
+
+// exports.verifyPassword = verifyPassword;
+// exports.requestCourse = async (req, res) => { 
+//   // console.log("Manan");
+//   const { courseCodes, iid } = req.body; 
+//   // console.log(courseCodes);
+//   try { 
     
+//     const results = [];
+    
+//     // Get professor's school first
+//     const professor = await prisma.professors.findUnique({
+//       where: { iid: iid }
+//     });
+//     if (!professor) {
+//       return res.status(404).json({
+//         success: false,
+//         error: 'Professor not found'
+//       });
+//     }
+//     console.log(professor)
+//     // Get chairperson_id based on professor's school
+//     const chairperson = await prisma.chairperson.findFirst({
+//       where: { school: professor.school }
+//     });
+    
+//     if (!chairperson) {
+//       return res.status(404).json({
+//         success: false,
+//         error: `Chairperson not found for school: ${professor.school}`
+//       });
+//     }
+//     console.log(chairperson)
+//     const chairperson_id = chairperson.chairperson_id;
+    
+//     // Loop through each course in the courseCodes array
+//     for (let i = 0; i < courseCodes.length; i++) {
+//       const courseCode = courseCodes[i];
+      
+//       // Check if entry exists in prof_course_req table
+//       const existingEntry = await prisma.prof_course_req.findFirst({
+//         where: {
+//           iid: iid,
+//           pre_final_course_id : courseCode
+//         }
+//       });
+      
+//       if (existingEntry) {
+//         // Entry exists in prof_course_req - DELETE from both tables
+//         console.log("Exists")
+//         // Delete from prof_course_req
+//         await prisma.prof_course_req.delete({
+//           where: {
+//             request_id: existingEntry.request_id
+//           }
+//         });
+        
+//         results.push({
+//           courseCode: courseCode,
+//           action: 'deleted',
+//           message: `Request for course ${courseCode} has been removed from both tables`
+//         });
+//       } else {
+//         // Entry doesn't exist in prof_course_req - CREATE in both tables
+//         console.log("dne");
+//         // Find the course_id and slot from pre_final_courses table based on course_code
+//         const preFinalCourse = await prisma.pre_final_courses.findFirst({
+//           where: {
+//             course_code: courseCode
+//           }
+//         });
+        
+//         if (!preFinalCourse) {
+//           results.push({
+//             courseCode: courseCode,
+//             action: 'skipped',
+//             message: `Course ${courseCode} not found in pre_final_courses table`
+//           });
+//           continue;
+//         }
+        
+//         const slot = preFinalCourse.slot; // Get slot from pre_final_courses table
+        
+//         // Create new entry in prof_course_req
+//         const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${iid.substr(-4)}`; // Simple ID generation
+        
+//         const newRequest = await prisma.prof_course_req.create({
+//           data: {
+//             request_id: requestId,
+//             pre_final_course_id: courseCode,
+//             accept_reject: false,
+//             chairperson_id: chairperson_id,
+//             slot: slot,
+//             professor: {
+//               connect: { iid: iid }
+//             }
+//           }
+//         });
+        
+//         results.push({
+//           courseCode: courseCode,
+//           action: 'created',
+//           message: `Request for course ${courseCode} has been created in both tables`,
+//           requestId: newRequest.request_id
+//         });
+//       }
+//     }
+ 
+//     res.json({ 
+//       success: true,
+//       message: 'Course requests processed successfully',
+//       results: results
+//     }); 
+//   } catch (err) { 
+//     console.error('Error processing course requests:', err); 
+//     res.status(500).json({ 
+//       success: false,
+//       error: 'Failed to process course requests.',
+//       details: err.message 
+//     }); 
+//   } 
+// };
+exports.requestCourse = async (req, res) => {
+  const { courseCodes, iid } = req.body;
+  
+  try {
     const results = [];
     
     // Get professor's school first
     const professor = await prisma.professors.findUnique({
       where: { iid: iid }
     });
+    
     if (!professor) {
       return res.status(404).json({
         success: false,
         error: 'Professor not found'
       });
     }
-    console.log(professor)
+    
+    console.log('Professor found:', professor);
+    
     // Get chairperson_id based on professor's school
     const chairperson = await prisma.chairperson.findFirst({
       where: { school: professor.school }
@@ -30,7 +159,8 @@ exports.requestCourse = async (req, res) => {
         error: `Chairperson not found for school: ${professor.school}`
       });
     }
-    console.log(chairperson)
+    
+    console.log('Chairperson found:', chairperson);
     const chairperson_id = chairperson.chairperson_id;
     
     // Loop through each course in the courseCodes array
@@ -41,54 +171,39 @@ exports.requestCourse = async (req, res) => {
       const existingEntry = await prisma.prof_course_req.findFirst({
         where: {
           iid: iid,
-          course_code: courseCode
+          pre_final_course_id: courseCode
         }
       });
       
       if (existingEntry) {
-        // Entry exists in prof_course_req - DELETE from both tables
+        // Entry exists - DELETE
+        console.log("Entry exists, deleting:", existingEntry.request_id);
         
-        // Delete from prof_course_req
         await prisma.prof_course_req.delete({
           where: {
             request_id: existingEntry.request_id
           }
         });
         
-        // Find and delete from prof_course_pre_final (need to find course_id first)
-        const preFinEntry = await prisma.prof_course_pre_final.findFirst({
-          where: {
-            iid: iid,
-            course: {
-              course_code: courseCode // Assuming pre_final_courses has course_code field
-            }
-          }
-        });
-        
-        if (preFinEntry) {
-          await prisma.prof_course_pre_final.delete({
-            where: {
-              uid: preFinEntry.uid
-            }
-          });
-        }
-        
         results.push({
           courseCode: courseCode,
           action: 'deleted',
-          message: `Request for course ${courseCode} has been removed from both tables`
+          message: `Request for course ${courseCode} has been removed`
         });
-      } else {
-        // Entry doesn't exist in prof_course_req - CREATE in both tables
         
-        // Find the course_id and slot from pre_final_courses table based on course_code
+      } else {
+        // Entry doesn't exist - CREATE
+        console.log("Entry does not exist, creating for course:", courseCode);
+        
+        // Find the course_id and slot from pre_final_courses table
         const preFinalCourse = await prisma.pre_final_courses.findFirst({
           where: {
-            course_code: courseCode
+            course_id: courseCode
           }
         });
         
         if (!preFinalCourse) {
+          console.log(`Course ${courseCode} not found in pre_final_courses table`);
           results.push({
             courseCode: courseCode,
             action: 'skipped',
@@ -97,75 +212,95 @@ exports.requestCourse = async (req, res) => {
           continue;
         }
         
-        const slot = preFinalCourse.slot; // Get slot from pre_final_courses table
+        console.log('Pre-final course found:', preFinalCourse);
+        const slot = preFinalCourse.slot;
         
-        // Create new entry in prof_course_req
-        const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${iid.substr(-4)}`; // Simple ID generation
+        // Generate unique request ID
+        const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${iid.substr(-4)}`;
+        console.log('Generated request ID:', requestId);
         
-        const newRequest = await prisma.prof_course_req.create({
-          data: {
-            request_id: requestId,
-            course_code: courseCode,
-            accept_reject: false, // Default to false (pending)
-            chairperson_id: chairperson_id,
-            slot: slot,
-            // Connect to existing professor via relation
-            professor: {
-              connect: { iid: iid }
-            }
-          }
-        });
+        // Prepare data for creation
+        const createData = {
+          request_id: requestId,
+          pre_final_course_id: courseCode,
+          accept_reject: false,
+          chairperson_id: chairperson_id,
+          slot: slot,
+          iid: iid  // Direct field assignment instead of connect
+        };
         
-        // Find the course_id from pre_final_courses table based on course_code
-        // const preFinalCourse = await prisma.pre_final_courses.findFirst({
-        //   where: {
-        //     course_code: courseCode
-        //   }
-        // });
+        console.log('Data to be created:', createData);
         
-        if (preFinalCourse) {
-          // Generate unique uid that fits VARCHAR(40) constraint
-          const timestamp = Date.now().toString().substr(-8); // Last 8 digits of timestamp
-          const profId = iid.substr(-4); // Last 4 chars of professor ID
-          const courseId = preFinalCourse.course_id.substr(-4); // Last 4 chars of course ID
-          const uid = `${profId}-${courseId}-${timestamp}`; // Format: XXXX-XXXX-XXXXXXXX (max 21 chars)
-          
-          // Create entry in prof_course_pre_final
-          await prisma.prof_course_pre_final.create({
-            data: {
-              uid: uid,
-              course: {
-                connect: { course_id: preFinalCourse.course_id }
-              },
-              professor: {
-                connect: { iid: iid }
-              }
-            }
+        try {
+          // Create new entry in prof_course_req
+          const newRequest = await prisma.prof_course_req.create({
+            data: createData
           });
+          
+          console.log('Successfully created request:', newRequest);
+          
+          results.push({
+            courseCode: courseCode,
+            action: 'created',
+            message: `Request for course ${courseCode} has been created`,
+            requestId: newRequest.request_id
+          });
+          
+        } catch (createError) {
+          console.error('Error creating request for course', courseCode, ':', createError);
+          
+          // Try alternative approach with connect if direct assignment failed
+          try {
+            const newRequestWithConnect = await prisma.prof_course_req.create({
+              data: {
+                request_id: requestId,
+                pre_final_course_id: courseCode,
+                accept_reject: false,
+                chairperson_id: chairperson_id,
+                slot: slot,
+                professor: {
+                  connect: { iid: iid }
+                }
+              }
+            });
+            
+            console.log('Successfully created request with connect:', newRequestWithConnect);
+            
+            results.push({
+              courseCode: courseCode,
+              action: 'created',
+              message: `Request for course ${courseCode} has been created`,
+              requestId: newRequestWithConnect.request_id
+            });
+            
+          } catch (connectError) {
+            console.error('Error creating request with connect for course', courseCode, ':', connectError);
+            results.push({
+              courseCode: courseCode,
+              action: 'error',
+              message: `Failed to create request for course ${courseCode}: ${connectError.message}`
+            });
+          }
         }
-        
-        results.push({
-          courseCode: courseCode,
-          action: 'created',
-          message: `Request for course ${courseCode} has been created in both tables`,
-          requestId: newRequest.request_id
-        });
       }
     }
- 
-    res.json({ 
+    
+    console.log('Final results:', results);
+    
+    res.json({
       success: true,
       message: 'Course requests processed successfully',
       results: results
-    }); 
-  } catch (err) { 
-    console.error('Error processing course requests:', err); 
-    res.status(500).json({ 
+    });
+    
+  } catch (err) {
+    console.error('Error processing course requests:', err);
+    res.status(500).json({
       success: false,
       error: 'Failed to process course requests.',
-      details: err.message 
-    }); 
-  } 
+      details: err.message
+    });
+  }
 };
 exports.accept_reject_students = async (req, res) => { 
   const { uids } = req.body; 
@@ -297,13 +432,13 @@ exports.login = async (req, res, next) => {
       return;
     }
     
-    // // Verify password
-    // const chk = await verifyPassword(password, corresponding.ldap_passwd);
+    // Verify password
+    const chk = await verifyPassword(password, corresponding.prof_passed);
     
-    // if (!chk) {
-    //   res.status(401).json({ message: "Invalid student ID or password" });
-    //   return;
-    // }
+    if (!chk) {
+      res.status(401).json({ message: "Invalid student ID or password" });
+      return;
+    }
     
     // Get user details
     // const usr = await prisma.users.findUnique({
@@ -381,11 +516,12 @@ exports.requested_courses = async (req, res) => {
     const requested = await prisma.prof_course_req.findMany({
       where: { iid },
       select: {
-        course_code: true,
+        pre_final_course_id : true,
         accept_reject: true
       }
     });
-
+    // console.log(requested);
+    // console.log("hello")
     if (!requested || requested.length === 0) {
       return res.status(404).json({
         success: false,
@@ -394,16 +530,17 @@ exports.requested_courses = async (req, res) => {
     }
 
     // Step 2: Get the matching courses from pre_final_courses
-    const courseCodes = requested.map(r => r.course_code);
+    const courseCodes = requested.map(r => r.pre_final_course_id);
 
     const courses = await prisma.pre_final_courses.findMany({
       where: {
-        course_code: { in: courseCodes }
+        course_id: { in: courseCodes }
       },
       orderBy: {
         course_name: 'asc'
       },
       select: {
+        course_id :true,
         course_code: true,
         course_name: true
       }
@@ -411,7 +548,7 @@ exports.requested_courses = async (req, res) => {
 
     // Step 3: Merge accept_reject with courses
     const courses_requested = courses.map(course => {
-      const reqObj = requested.find(r => r.course_code === course.course_code);
+      const reqObj = requested.find(r => r.pre_final_course_id === course.course_id);
       return {
         ...course,
         accept_reject: reqObj ? reqObj.accept_reject : null
